@@ -5,14 +5,19 @@ import heroImg from './assets/hero.png'
 import './App.css'
 import App1 from './components/App1.jsx'
 import Login from './components/Login.jsx'
-function App() {
-  const [count, setCount] = useState(0)
+import Register from './components/Register.jsx'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+function App() {
   return (
-    
-      <Login />
-    
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
