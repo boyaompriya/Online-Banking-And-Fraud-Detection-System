@@ -1,20 +1,26 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
     console.log("Email:", email);
     console.log("Password:", password);
+
+    // After successful login
+    navigate("/dashboard");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
           Login
         </h1>
@@ -22,14 +28,19 @@ function Login() {
         <p className="text-center text-gray-500 mb-6">
           Welcome back! Please login to your account.
         </p>
-        <p>
-        Don't have an account?{" "}
-        <Link to="/register" className="text-blue-600 font-semibold">
-        Register
-        </Link>
+
+        <p className="text-center mb-6">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Register
+          </Link>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -62,13 +73,19 @@ function Login() {
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="w-4 h-4" />
+              <input
+                type="checkbox"
+                className="w-4 h-4"
+              />
               Remember me
             </label>
 
-            <a href="#" className="text-blue-600 hover:underline">
+            <Link
+              to="/forgot-password"
+              className="text-blue-600 hover:underline"
+            >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button
@@ -77,14 +94,19 @@ function Login() {
           >
             Login
           </button>
+
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Don't have an account?{" "}
-          <a href="#" className="text-blue-600 font-semibold hover:underline">
+          <Link
+            to="/register"
+            className="text-blue-600 font-semibold hover:underline"
+          >
             Sign up
-          </a>
+          </Link>
         </p>
+
       </div>
     </div>
   );

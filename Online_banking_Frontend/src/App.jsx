@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-import App1 from './components/App1.jsx'
-import Login from './components/Login.jsx'
-import Register from './components/Register.jsx'
+import "./App.css";
+
+import Login from "./components/Login.jsx";
+import Register from "./components/Register.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import Transactions from "./components/Transactions";
+import Transfer from "./components/Transfer";
+import FraudAlerts from "./components/FraudAlerts";
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -15,10 +16,13 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/transactions" element={<Transactions />} />
+        <Route path="/transfer" element={<Transfer />} />
+        <Route path="/fraud-alerts" element={<FraudAlerts />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-

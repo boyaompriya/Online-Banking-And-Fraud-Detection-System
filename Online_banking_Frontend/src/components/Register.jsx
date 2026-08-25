@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 function Register() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,7 +28,11 @@ function Register() {
     }
 
     console.log("Registration Data:", formData);
+
     alert("Registration successful!");
+
+    // Go to Login page after registration
+    navigate("/login");
   };
 
   return (
@@ -42,7 +49,6 @@ function Register() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Full Name
@@ -59,7 +65,6 @@ function Register() {
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -76,7 +81,6 @@ function Register() {
             />
           </div>
 
-          {/* Phone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
@@ -93,7 +97,6 @@ function Register() {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -110,7 +113,6 @@ function Register() {
             />
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
@@ -127,7 +129,6 @@ function Register() {
             />
           </div>
 
-          {/* Register Button */}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
@@ -139,9 +140,12 @@ function Register() {
 
         <p className="text-center text-gray-600 mt-5">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 font-semibold">
+          <Link
+            to="/login"
+            className="text-blue-600 font-semibold hover:underline"
+          >
             Login
-          </a>
+          </Link>
         </p>
 
       </div>
