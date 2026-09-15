@@ -1,148 +1,91 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-function Transfer() {
-  const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    accountNumber: "",
-    confirmAccountNumber: "",
-    ifsc: "",
-    amount: "",
-    description: "",
-  });
+function DebitMoney() {
+  const [accountNumber, setAccountNumber] = useState("");
+  const [ifscCode, setIfscCode] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
 
   const [balance, setBalance] = useState(0);
+
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [loading, setLoading] = useState(false);
 
   // =====================================================
-  // LOAD CURRENT BALANCE
+  // LOAD ACCOUNT INFORMATION
   // =====================================================
 
   useEffect(() => {
     const savedBalance = localStorage.getItem("balance");
+    const savedAccount = localStorage.getItem("account");
 
     if (savedBalance !== null) {
       setBalance(Number(savedBalance));
     }
+
+    if (savedAccount) {
+      try {
+        const account = JSON.parse(savedAccount);
+
+        if (account?.account_number) {
+          setAccountNumber(account.account_number);
+        }
+
+        if (account?.ifsc_code) {
+          setIfscCode(account.ifsc_code);
+        }
+
+      } catch (error) {
+        console.error(
+          "Unable to read saved account information:",
+          error
+        );
+      }
+    }
   }, []);
 
   // =====================================================
-  // HANDLE INPUT
+  // CLEAR MESSAGE
   // =====================================================
 
-  const handleChange = (e) => {
-    let value = e.target.value;
-
-    // IFSC automatically uppercase
-    if (e.target.name === "ifsc") {
-      value = value.toUpperCase();
-    }
-
-    // Account numbers only digits
-    if (
-      e.target.name === "accountNumber" ||
-      e.target.name === "confirmAccountNumber"
-    ) {
-      value = value.replace(/\D/g, "");
-    }
-
-    setFormData({
-      ...formData,
-      [e.target.name]: value,
-    });
-
+  const clearMessage = () => {
     setMessage("");
     setMessageType("");
   };
 
   // =====================================================
-  // HANDLE TRANSFER
+  // HANDLE DEBIT
   // =====================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setMessage("");
-    setMessageType("");
+    clearMessage();
 
-    const accountNumber =
-      formData.accountNumber.trim();
+    const cleanAccountNumber =
+      accountNumber.trim();
 
-    const confirmAccountNumber =
-      formData.confirmAccountNumber.trim();
+    const cleanIfscCode =
+      ifscCode.trim().toUpperCase();
 
-    const ifsc =
-      formData.ifsc.trim().toUpperCase();
+    const cleanAmount =
+      amount.trim();
 
-    const amount =
-      formData.amount.trim();
-
-    const description =
-      formData.description.trim() ||
-      "Money Transfer";
-
-    const senderId =
-      localStorage.getItem("accountId");
-
-    // =================================================
-    // LOGIN CHECK
-    // =================================================
-
-    if (!senderId) {
-      setMessage(
-        "Please login again before making a transfer."
-      );
-      setMessageType("error");
-      return;
-    }
-
-    // =================================================
-    // ACCOUNT NUMBER MATCH
-    // =================================================
-
-    if (
-      accountNumber !==
-      confirmAccountNumber
-    ) {
-      setMessage(
-        "Account numbers do not match."
-      );
-      setMessageType("error");
-      return;
-    }
+    const cleanDescription =
+      description.trim() ||
+      "Money Withdrawal";
 
     // =================================================
     // ACCOUNT NUMBER VALIDATION
     // =================================================
 
-    if (!/^\d{10,18}$/.test(accountNumber)) {
+    if (!/^\d{10,18}$/.test(cleanAccountNumber)) {
       setMessage(
         "Please enter a valid account number (10-18 digits)."
       );
-      setMessageType("error");
-      return;
-    }
 
-    // =================================================
-    // PREVENT SELF TRANSFER
-    // =================================================
-
-    const loggedInAccount =
-      JSON.parse(
-        localStorage.getItem("account") || "null"
-      );
-
-    if (
-      loggedInAccount?.account_number &&
-      loggedInAccount.account_number ===
-        accountNumber
-    ) {
-      setMessage(
-        "You cannot transfer money to your own account."
-      );
       setMessageType("error");
       return;
     }
@@ -152,11 +95,14 @@ function Transfer() {
     // =================================================
 
     if (
-      !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)
+      !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(
+        cleanIfscCode
+      )
     ) {
       setMessage(
         "Please enter a valid IFSC code, for example SBIN0001234."
       );
+
       setMessageType("error");
       return;
     }
@@ -165,42 +111,44 @@ function Transfer() {
     // AMOUNT VALIDATION
     // =================================================
 
-    const transferAmount =
-      Number(amount);
+    const debitAmount =
+      Number(cleanAmount);
 
     if (
-      !amount ||
-      isNaN(transferAmount) ||
-      transferAmount <= 0
+      !cleanAmount ||
+      isNaN(debitAmount) ||
+      debitAmount <= 0
     ) {
       setMessage(
         "Please enter a valid amount."
       );
+
       setMessageType("error");
       return;
     }
 
     // =================================================
-    // BALANCE CHECK
+    // BALANCE VALIDATION
     // =================================================
 
-    if (transferAmount > balance) {
+    if (debitAmount > balance) {
       setMessage(
-        "Insufficient balance for this transfer."
+        "Insufficient balance for this debit transaction."
       );
+
       setMessageType("error");
       return;
     }
 
     // =================================================
-    // START TRANSFER
+    // START REQUEST
     // =================================================
 
     setLoading(true);
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/transactions/transfer/",
+        "http://localhost:8000/api/transactions/debit/",
         {
           method: "POST",
 
@@ -209,12 +157,17 @@ function Transfer() {
           },
 
           body: JSON.stringify({
-            sender_id: senderId,
-            receiver_account_number:
-              accountNumber,
-            receiver_ifsc_code: ifsc,
-            amount: amount,
-            description: description,
+            account_number:
+              cleanAccountNumber,
+
+            ifsc_code:
+              cleanIfscCode,
+
+            amount:
+              cleanAmount,
+
+            description:
+              cleanDescription,
           }),
         }
       );
@@ -223,19 +176,19 @@ function Transfer() {
         await response.json();
 
       console.log(
-        "Django transfer response:",
+        "Debit response:",
         data
       );
 
       // =================================================
-      // TRANSFER FAILED
+      // ERROR RESPONSE
       // =================================================
 
       if (!response.ok) {
         setMessage(
           data.error ||
             data.detail ||
-            "Transfer failed. Please try again."
+            "Unable to debit money."
         );
 
         setMessageType("error");
@@ -243,47 +196,60 @@ function Transfer() {
       }
 
       // =================================================
-      // UPDATE BALANCE
+      // UPDATE REAL BALANCE
       // =================================================
 
       if (
-        data.sender?.balance !==
+        data.account?.balance !==
         undefined
       ) {
         const newBalance =
-          Number(data.sender.balance);
+          Number(data.account.balance);
 
         setBalance(newBalance);
 
         localStorage.setItem(
           "balance",
-          String(data.sender.balance)
+          String(data.account.balance)
+        );
+      } else {
+        // Fallback if backend doesn't return balance
+        const newBalance =
+          balance - debitAmount;
+
+        setBalance(newBalance);
+
+        localStorage.setItem(
+          "balance",
+          String(newBalance)
         );
       }
 
       // =================================================
-      // UPDATE ACCOUNT
+      // UPDATE ACCOUNT INFORMATION
       // =================================================
 
-      if (data.sender) {
+      if (data.account) {
         localStorage.setItem(
           "account",
-          JSON.stringify(data.sender)
+          JSON.stringify(data.account)
         );
+
+        if (data.account.id) {
+          localStorage.setItem(
+            "accountId",
+            String(data.account.id)
+          );
+        }
 
         localStorage.setItem(
           "accountName",
-          data.sender.name || ""
+          data.account.name || ""
         );
 
         localStorage.setItem(
           "accountEmail",
-          data.sender.email || ""
-        );
-
-        localStorage.setItem(
-          "accountId",
-          String(data.sender.id)
+          data.account.email || ""
         );
       }
 
@@ -292,29 +258,24 @@ function Transfer() {
       // =================================================
 
       setMessage(
-        `₹${transferAmount.toLocaleString(
+        `₹${debitAmount.toLocaleString(
           "en-IN",
           {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           }
-        )} transferred successfully!`
+        )} debited successfully!`
       );
 
       setMessageType("success");
 
-      // Clear form
-      setFormData({
-        accountNumber: "",
-        confirmAccountNumber: "",
-        ifsc: "",
-        amount: "",
-        description: "",
-      });
+      // Clear amount and description
+      setAmount("");
+      setDescription("");
 
     } catch (error) {
       console.error(
-        "Transfer error:",
+        "Debit error:",
         error
       );
 
@@ -368,21 +329,23 @@ function Transfer() {
       </nav>
 
       {/* =================================================
-          MAIN
+          MAIN CONTENT
           ================================================= */}
 
       <main className="max-w-3xl mx-auto px-6 py-10">
 
-        {/* Heading */}
+        {/* =================================================
+            HEADING
+            ================================================= */}
 
         <div className="mb-8">
 
           <h2 className="text-3xl font-bold text-gray-800">
-            Transfer Money
+            Debit Money
           </h2>
 
           <p className="text-gray-500 mt-2">
-            Transfer money securely to another bank account.
+            Withdraw money from your bank account securely.
           </p>
 
         </div>
@@ -414,8 +377,8 @@ function Transfer() {
 
             </div>
 
-            <div className="w-14 h-14 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center text-2xl">
-              💸
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-xl flex items-center justify-center text-2xl">
+              🏧
             </div>
 
           </div>
@@ -423,33 +386,38 @@ function Transfer() {
         </div>
 
         {/* =================================================
-            TRANSFER CARD
+            DEBIT FORM
             ================================================= */}
 
         <div className="bg-white rounded-2xl shadow-md p-8">
 
           <form onSubmit={handleSubmit}>
 
-            {/* =================================================
-                ACCOUNT NUMBER
-                ================================================= */}
+            {/* ACCOUNT NUMBER */}
 
             <div className="mb-5">
 
               <label className="block text-gray-700 font-semibold mb-2">
-                Receiver Account Number
+                Account Number
               </label>
 
               <input
                 type="text"
-                name="accountNumber"
-                value={formData.accountNumber}
-                onChange={handleChange}
-                placeholder="Enter receiver account number"
-                required
+                value={accountNumber}
+                onChange={(e) => {
+                  setAccountNumber(
+                    e.target.value.replace(
+                      /\D/g,
+                      ""
+                    )
+                  );
+                  clearMessage();
+                }}
+                placeholder="Enter account number"
                 maxLength={18}
                 inputMode="numeric"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               />
 
               <p className="text-xs text-gray-400 mt-1">
@@ -458,35 +426,7 @@ function Transfer() {
 
             </div>
 
-            {/* =================================================
-                CONFIRM ACCOUNT NUMBER
-                ================================================= */}
-
-            <div className="mb-5">
-
-              <label className="block text-gray-700 font-semibold mb-2">
-                Confirm Account Number
-              </label>
-
-              <input
-                type="text"
-                name="confirmAccountNumber"
-                value={
-                  formData.confirmAccountNumber
-                }
-                onChange={handleChange}
-                placeholder="Re-enter receiver account number"
-                required
-                maxLength={18}
-                inputMode="numeric"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-
-            </div>
-
-            {/* =================================================
-                IFSC
-                ================================================= */}
+            {/* IFSC */}
 
             <div className="mb-5">
 
@@ -496,13 +436,17 @@ function Transfer() {
 
               <input
                 type="text"
-                name="ifsc"
-                value={formData.ifsc}
-                onChange={handleChange}
+                value={ifscCode}
+                onChange={(e) => {
+                  setIfscCode(
+                    e.target.value.toUpperCase()
+                  );
+                  clearMessage();
+                }}
                 placeholder="Example: SBIN0001234"
-                required
                 maxLength={11}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
               />
 
               <p className="text-xs text-gray-400 mt-1">
@@ -511,9 +455,7 @@ function Transfer() {
 
             </div>
 
-            {/* =================================================
-                AMOUNT
-                ================================================= */}
+            {/* AMOUNT */}
 
             <div className="mb-5">
 
@@ -529,14 +471,18 @@ function Transfer() {
 
                 <input
                   type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  placeholder="Enter transfer amount"
-                  required
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(
+                      e.target.value
+                    );
+                    clearMessage();
+                  }}
+                  placeholder="Enter amount"
                   min="1"
                   step="0.01"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
 
               </div>
@@ -554,9 +500,7 @@ function Transfer() {
 
             </div>
 
-            {/* =================================================
-                DESCRIPTION
-                ================================================= */}
+            {/* DESCRIPTION */}
 
             <div className="mb-6">
 
@@ -565,13 +509,17 @@ function Transfer() {
               </label>
 
               <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Enter transfer description"
+                value={description}
+                onChange={(e) => {
+                  setDescription(
+                    e.target.value
+                  );
+                  clearMessage();
+                }}
+                placeholder="Example: Money Withdrawal"
                 rows={3}
                 maxLength={255}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               />
 
               <p className="text-xs text-gray-400 mt-1">
@@ -595,13 +543,13 @@ function Transfer() {
                 <div>
 
                   <h4 className="font-bold text-blue-800">
-                    Secure Transfer
+                    Secure Debit
                   </h4>
 
                   <p className="text-sm text-blue-700 mt-1">
-                    This transfer is monitored by the
-                    fraud detection system for suspicious
-                    transaction activity.
+                    This transaction is monitored by
+                    the fraud detection system for
+                    suspicious activity.
                   </p>
 
                 </div>
@@ -611,17 +559,17 @@ function Transfer() {
             </div>
 
             {/* =================================================
-                SUBMIT
+                SUBMIT BUTTON
                 ================================================= */}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {loading
-                ? "Processing Transfer..."
-                : "Transfer Money"}
+                ? "Processing Debit..."
+                : "Debit Money"}
             </button>
 
           </form>
@@ -661,19 +609,45 @@ function Transfer() {
         </div>
 
         {/* =================================================
-            BACK TO DASHBOARD
+            SECURITY MESSAGE
             ================================================= */}
+
+        <div className="mt-8 bg-green-50 border border-green-200 rounded-2xl p-6">
+
+          <div className="flex items-start gap-4">
+
+            <div className="text-3xl">
+              🔒
+            </div>
+
+            <div>
+
+              <h3 className="font-bold text-green-800">
+                Secure Banking
+              </h3>
+
+              <p className="text-green-700 text-sm mt-1">
+                Your debit transaction is checked
+                against your available balance and
+                monitored by the fraud detection system.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* BACK TO DASHBOARD */}
 
         <div className="mt-8 text-center">
 
-          <button
-            onClick={() =>
-              navigate("/dashboard")
-            }
+          <Link
+            to="/dashboard"
             className="text-blue-600 font-semibold hover:underline"
           >
             ← Back to Dashboard
-          </button>
+          </Link>
 
         </div>
 
@@ -683,4 +657,4 @@ function Transfer() {
   );
 }
 
-export default Transfer;
+export default DebitMoney;

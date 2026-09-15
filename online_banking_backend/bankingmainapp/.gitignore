@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Django
+*.sqlite3
+
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# React / Vite
+node_modules/
+dist/
+
+# Vite
+.vite/
+
+# IDE
+.vscode/
+.idea/
